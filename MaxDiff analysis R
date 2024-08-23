@@ -1,0 +1,56 @@
+# Create a balanced incomplete block design
+library(agricolae)
+
+# 5 attributes and k=3 size block
+trt <- c("A","B","C","D", "E")
+k <- 4
+outdesign <- design.bib(trt, k, serie = 2, seed = 541) #randomization within a block
+print(outdesign$sketch)
+
+# Step 1: Load the Data
+lapply(c("dplyr", 
+         "tidyr", 
+         "choicetools", 
+         "ChoiceModelR", 
+         "reshape2",
+         "mlogit",
+         "Rmisc",
+         "matrixStats",
+         "superheat",
+         "ggridges"), library, character.only = TRUE)
+
+# Read the CSV file
+data <- read.csv("data.csv")
+
+# Load the data
+md.define <- parse.md.qualtrics("data.csv",
+                                returnList=TRUE)
+
+md.define$md.block <- read.md.qualtrics(md.define)$md.block 
+
+# Estimate the model
+plot.md.counts(md.define) # simple count  
+test.hb <- md.hb(md.define, mcmc.iters = 10000,
+                 mcmc.seed = 98101)# estimate
+md.define$md.model.hb <- test.hb$md.model # save results
+md.define$md.hb.betas <- test.hb$md.hb.betas # raw coefficients/utilities
+md.define$md.hb.betas.zc <- test.hb$md.hb.betas.zc # zero-centered diff scores by individual (rec'd)
+
+# Estimate relative preference
+feature.util <- test.hb$md.hb.betas.zc[ ,
+                                      c("Human.Appearance", "Empathy", "Humor",
+                                        "Quality.of.Information", 
+                                        "Extroverted.Personality")]
+
+averages <- colMeans(feature.util)
+
+## Human appearance was the most preferred, with a relative preference score of 38. 
+## Quality of Information follows closely with 35 preference. 
+## Humor has a much lower relative preference at 5. 
+## Extroverted Personality and Empathy show minimal to no relative preference
+
+# Plot the result
+# Relative preference of a feature compared to the entire set of 5 features
+plot.md.range(md.define) +  
+  theme_minimal() +
+  xlab("Chatbot Features")
