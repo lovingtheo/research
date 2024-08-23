@@ -1,0 +1,42 @@
+# Load library
+library(mlogit)
+library(tidyverse)
+
+# Inspect data
+summary(df.raw) # each predictor must be in factor
+
+xtabs(choice ~ modality, data = df.raw) #overview of counts 
+xtabs(choice ~ appearance, data = df.raw)
+xtabs(choice ~ identity, data = df.raw)
+
+# Fit models 
+# Format data
+df.mlogit <- mlogit.data(df.raw, 
+                         choice="choice", 
+                         shape = "long",
+                         alt.var = "alt",
+                         id.var = "id")
+
+# Estimate a model
+m1 <- mlogit(choice ~ 0 + modality + appearance + identity, data = df.mlogit)
+summary(m1)
+
+# Predicting shares
+# Function to predict shares
+predict.mnl <- function(model, data) {
+     data.model <- model.matrix(update(model$formula, 0 ~ .), data = data)[,-1]
+     utility <- data.model%*%model$coef
+     share <- exp(utility)/sum(exp(utility))
+     cbind(share, data)
+}
+
+# Save attributes in a list 
+attrib <- list(modality = c("text", "voice", "video"),
+               identity = c("teacher", "peer"),
+               appearance = c("machine", "human", "semi")
+               )
+# Create full factorial with three attributes
+new.data <- expand.grid(attrib)  
+
+# Run the model 
+predict.mnl(m1, new.data)  
