@@ -1,0 +1,39 @@
+# Load library
+if(!require("tidytext")) {install.packages("tidytext"); library("tidytext")}
+library(readr)
+library(tidyverse)
+library(stm)
+
+# Import dataset
+data <- read_csv("~/Desktop/FCAC/data/reddit_posts_PF.csv")
+
+colnames(data)[which(names(data) == "Post Text")] <- "content" ##change a column name 
+
+# Pre-processing text content
+temp <- textProcessor(data$content, metadata = data)
+meta <- temp$meta
+vocab <- temp$vocab
+docs <- temp$documents
+
+#Remove empty documents with no words & low-frequent words
+out <- prepDocuments(docs, vocab, meta, lower.thresh = 15) 
+
+# Modeling with 8 topics
+m1 <- stm(documents = out$documents,
+         vocab = out$vocab,
+         K = 8,
+         data = out$meta,
+         max.em.its = 75)
+
+# Find Representative Words for Topic
+labelTopics(m1, n=10, topics = 6)
+
+# Plot
+plot(m1, 
+     xlim = c(0, 0.6))
+
+# Find Representative Texts for Topic
+findThoughts(m1,
+             texts = out$meta$content,
+             n = 10,
+             topics = 2)$docs[[1]]
