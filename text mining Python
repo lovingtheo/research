@@ -1,0 +1,69 @@
+import praw
+import csv
+from datetime import datetime
+import pandas as pd
+
+reddit = praw.Reddit(client_id="Cbkm2HF0SkQ2FT1M4O3XcQ",
+                                client_secret="06cbcMnzfAiypXZiZ6-6ySxBkw4sDg",
+                                user_agent="FTopic",
+                               username="taetaeheart",
+                               password="ROnePiece!@3")
+
+subreddit = reddit.subreddit("QuebecFinance")
+
+# Scraping all posts
+posts = subreddit.top(limit=None)
+
+posts_dict = {"Title": [], "Post Text": [],
+              "ID": [], "Score": [], "Upvotes": [], "Upvote Ratio": [],
+              "Total Comments": [], "Created On": [], "Post URL": [],
+              "Original Content": []
+              }
+
+start_date = datetime.strptime('01-01-2023 00:00:00', '%d-%m-%Y %H:%M:%S').timestamp()
+
+for post in posts:
+    # Date of each post's creation
+    date = post.created_utc
+    print("Post created at:", datetime.utcfromtimestamp(date).strftime('%Y-%m-%d %H:%M:%S'))
+
+    # Changed the if condition to directly compare timestamps
+    if date > start_date:
+        print("Post added to the results.")
+        # Title of each post
+        posts_dict["Title"].append(post.title)
+
+        # Text inside a post
+        posts_dict["Post Text"].append(post.selftext)
+
+        # Unique ID of each post
+        posts_dict["ID"].append(post.id)
+
+        # The score of a post
+        posts_dict["Score"].append(post.score)
+
+        # Number of Upvotes
+        posts_dict["Upvotes"].append(post.ups)
+
+        # Upvote Ratio of a post
+        posts_dict["Upvote Ratio"].append(post.upvote_ratio)
+
+        # Total number of comments inside the post
+        posts_dict["Total Comments"].append(post.num_comments)
+
+        # Date the post was Created
+        posts_dict["Created On"].append(post.created_utc)
+
+        # URL of each post
+        posts_dict["Post URL"].append(post.url)
+
+        # Flair of each post
+        posts_dict["Original Content"].append(post.is_original_content)
+
+# Saving the data in a pandas dataframe
+all_posts = pd.DataFrame(posts_dict)
+all_posts['Created On'] = pd.to_datetime(all_posts['Created On'], unit='s')
+
+# Save the DataFrame to a CSV file with UTF-8 encoding
+all_posts.to_csv("reddit_posts_Ql.csv", index=False, encoding='utf-8')
+print("Results exported to 'reddit_posts_Ql.csv'")
